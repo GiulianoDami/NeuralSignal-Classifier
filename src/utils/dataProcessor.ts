@@ -1,7 +1,7 @@
 typescript
 export class DataProcessor {
   /**
-   * Normalizes neural data to a 0-1 range
+   * Normalizes neural data to a standard range
    * @param data - Raw neural data array
    * @returns Normalized data array
    */
@@ -29,68 +29,75 @@ export class DataProcessor {
   }
   
   /**
-   * Calculates mean of each column in the data
+   * Calculates statistical features from neural data
    * @param data - Neural data array
-   * @returns Array of means for each column
+   * @returns Object containing statistical features
    */
-  static calculateMeans(data: number[][]): number[] {
-    if (data.length === 0) return [];
+  static calculateFeatures(data: number[][]): Record<string, number> {
+    if (data.length === 0) return {};
     
-    const means: number[] = [];
-    const numColumns = data[0].length;
+    const flattened = data.flat();
+    const mean = flattened.reduce((sum, val) => sum + val, 0) / flattened.length;
     
-    for (let i = 0; i < numColumns; i++) {
-      let sum = 0;
-      for (let j = 0; j < data.length; j++) {
-        sum += data[j][i];
+    // Calculate variance
+    const variance = flattened.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / flattened.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // Find min and max
+    const min = Math.min(...flattened);
+    const max = Math.max(...flattened);
+    
+    // Calculate average change between consecutive values
+    let avgChange = 0;
+    if (flattened.length > 1) {
+      let totalChange = 0;
+      for (let i = 1; i < flattened.length; i++) {
+        totalChange += Math.abs(flattened[i] - flattened[i-1]);
       }
-      means.push(sum / data.length);
+      avgChange = totalChange / (flattened.length - 1);
     }
     
-    return means;
+    return {
+      mean,
+      variance,
+      stdDev,
+      min,
+      max,
+      avgChange
+    };
   }
   
   /**
-   * Calculates standard deviation for each column
-   * @param data - Neural data array
-   * @param means - Pre-calculated means for each column
-   * @returns Array of standard deviations for each column
+   * Filters out noise from neural data using a simple moving average
+   * @param data - Raw neural data
+   * @param windowSize - Size of the moving average window
+   * @returns Filtered data
    */
-  static calculateStandardDeviations(data: number[][], means: number[]): number[] {
-    if (data.length === 0) return [];
+  static filterNoise(data: number[][], windowSize: number = 3): number[][] {
+    if (data.length === 0 || windowSize <= 0) return data;
     
-    const stdDevs: number[] = [];
-    const numColumns = data[0].length;
-    
-    for (let i = 0; i < numColumns; i++) {
-      let sumSquaredDiff = 0;
-      for (let j = 0; j < data.length; j++) {
-        const diff = data[j][i] - means[i];
-        sumSquaredDiff += diff * diff;
+    return data.map(row => {
+      if (row.length <= windowSize) return row;
+      
+      const filteredRow: number[] = [];
+      
+      // Apply moving average to each element
+      for (let i = 0; i < row.length; i++) {
+        let sum = 0;
+        let count = 0;
+        
+        // Calculate average over window
+        for (let j = Math.max(0, i - Math.floor(windowSize/2)); 
+             j <= Math.min(row.length - 1, i + Math.floor(windowSize/2)); 
+             j++) {
+          sum += row[j];
+          count++;
+        }
+        
+        filteredRow.push(sum / count);
       }
-      const variance = sumSquaredDiff / data.length;
-      stdDevs.push(Math.sqrt(variance));
-    }
-    
-    return stdDevs;
-  }
-  
-  /**
-   * Standardizes data using z-score normalization
-   * @param data - Neural data array
-   * @returns Standardized data array
-   */
-  static standardize(data: number[][]): number[][] {
-    if (data.length === 0) return [];
-    
-    const means = this.calculateMeans(data);
-    const stdDevs = this.calculateStandardDeviations(data, means);
-    
-    return data.map(row => 
-      row.map((value, index) => {
-        const stdDev = stdDevs[index] || 1;
-        return (value - means[index]) / stdDev;
-      })
-    );
+      
+      return filteredRow;
+    });
   }
 }
