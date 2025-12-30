@@ -11,7 +11,7 @@ const neuralData = [
   [0.7, 0.1, 0.5, 0.3]
 ];
 
-// Analyze the neural pattern
+// Analyze the pattern
 const result = classifier.analyzePattern(neuralData);
 console.log('Analysis Result:', result);
 
