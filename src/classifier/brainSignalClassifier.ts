@@ -11,140 +11,115 @@ export interface ClassificationResult {
 
 export class BrainSignalClassifier {
   private trainingData: NeuralPattern[] = [];
-  private patternDimensions: number;
-
-  constructor() {
-    this.patternDimensions = 0;
-  }
+  private patternDimensions: number = 0;
 
   /**
    * Analyzes neural activity patterns to detect anomalies
+   * @param neuralData - 2D array representing neural firing sequences
+   * @returns Analysis results with pattern characteristics
    */
-  analyzePattern(data: number[][]): object {
-    if (data.length === 0) {
+  analyzePattern(neuralData: number[][]): any {
+    if (neuralData.length === 0) {
       throw new Error('Neural data cannot be empty');
     }
 
-    // Validate that all rows have the same length
-    const firstRowLength = data[0].length;
-    for (const row of data) {
-      if (row.length !== firstRowLength) {
-        throw new Error('All rows in neural data must have the same length');
-      }
-    }
-
-    this.patternDimensions = firstRowLength;
-
+    this.patternDimensions = neuralData[0].length;
+    
     // Calculate basic statistics
-    const flattenedData = data.flat();
+    const flattenedData = neuralData.flat();
     const mean = flattenedData.reduce((sum, val) => sum + val, 0) / flattenedData.length;
-    const variance = flattenedData.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / flattenedData.length;
-    const stdDev = Math.sqrt(variance);
-
-    // Detect potential anomalies
-    const anomalies = [];
-    for (let i = 0; i < data.length; i++) {
-      for (let j = 0; j < data[i].length; j++) {
-        const zScore = Math.abs((data[i][j] - mean) / (stdDev || 1));
-        if (zScore > 2) {
-          anomalies.push({ row: i, col: j, value: data[i][j], zScore });
-        }
-      }
-    }
-
+    const max = Math.max(...flattenedData);
+    const min = Math.min(...flattenedData);
+    
+    // Check for potential anomalies
+    const anomalies = this.detectAnomalies(neuralData);
+    
     return {
-      dimensions: {
-        rows: data.length,
-        columns: firstRowLength
-      },
-      statistics: {
-        mean,
-        variance,
-        standardDeviation: stdDev
-      },
-      anomalies: anomalies.length > 0 ? anomalies : null
+      dimensions: this.patternDimensions,
+      totalReadings: neuralData.length,
+      meanActivity: mean,
+      maxActivity: max,
+      minActivity: min,
+      anomaliesDetected: anomalies.length > 0,
+      anomalyCount: anomalies.length,
+      anomalyPositions: anomalies
     };
   }
 
   /**
+   * Detects anomalous patterns in neural data
+   * @param neuralData - 2D array of neural readings
+   * @returns Array of positions where anomalies were detected
+   */
+  private detectAnomalies(neuralData: number[][]): number[] {
+    const anomalies: number[] = [];
+    const threshold = 0.7; // Threshold for what constitutes an anomaly
+    
+    neuralData.forEach((reading, index) => {
+      const avg = reading.reduce((sum, val) => sum + val, 0) / reading.length;
+      if (avg > threshold) {
+        anomalies.push(index);
+      }
+    });
+    
+    return anomalies;
+  }
+
+  /**
    * Trains the classifier with known neural patterns
+   * @param patterns - Array of labeled neural patterns
    */
   train(patterns: NeuralPattern[]): void {
     if (patterns.length === 0) {
       throw new Error('Training patterns cannot be empty');
     }
-
-    // Validate patterns
+    
+    this.trainingData = [...patterns];
+    
+    // Validate all patterns have same dimensions
+    const firstPatternLength = patterns[0].pattern[0].length;
     for (const pattern of patterns) {
-      if (!pattern.pattern || !Array.isArray(pattern.pattern)) {
-        throw new Error('Each pattern must be an array of arrays');
-      }
-      
-      if (!pattern.label || typeof pattern.label !== 'string') {
-        throw new Error('Each pattern must have a valid label string');
-      }
-
-      // Check that all rows have the same length
-      if (pattern.pattern.length > 0) {
-        const firstRowLength = pattern.pattern[0].length;
-        for (const row of pattern.pattern) {
-          if (row.length !== firstRowLength) {
-            throw new Error('All rows in a pattern must have the same length');
-          }
-        }
+      if (pattern.pattern[0].length !== firstPatternLength) {
+        throw new Error('All training patterns must have the same dimensions');
       }
     }
-
-    this.trainingData = [...patterns];
+    
+    this.patternDimensions = firstPatternLength;
   }
 
   /**
    * Classifies an unknown neural pattern
+   * @param pattern - Neural pattern to classify
+   * @returns Classification result with label and confidence
    */
-  classify(pattern: number[][]): ClassificationResult | null {
+  classify(pattern: number[][]): ClassificationResult {
     if (this.trainingData.length === 0) {
       throw new Error('Classifier must be trained before making classifications');
     }
-
-    if (!pattern || !Array.isArray(pattern)) {
-      throw new Error('Pattern must be an array of arrays');
-    }
-
-    if (pattern.length === 0) {
-      throw new Error('Pattern cannot be empty');
-    }
-
-    // Validate pattern dimensions match training data
-    const firstRowLength = pattern[0].length;
-    for (const row of pattern) {
-      if (row.length !== firstRowLength) {
-        throw new Error('All rows in pattern must have the same length');
-      }
-    }
-
-    if (firstRowLength !== this.patternDimensions && this.patternDimensions > 0) {
-      throw new Error(`Pattern dimension mismatch. Expected ${this.patternDimensions}, got ${firstRowLength}`);
-    }
-
-    // Simple similarity matching based on average values
-    const patternMean = pattern.flat().reduce((sum, val) => sum + val, 0) / pattern.flat().length;
     
-    let bestMatch: ClassificationResult | null = null;
-    let maxSimilarity = -Infinity;
-
+    if (pattern[0].length !== this.patternDimensions) {
+      throw new Error(`Pattern dimension mismatch. Expected ${this.patternDimensions}, got ${pattern[0].length}`);
+    }
+    
+    // Simple similarity matching based on average values
+    const patternAvg = pattern.flat().reduce((sum, val) => sum + val, 0) / pattern.flat().length;
+    
+    let bestMatch: NeuralPattern | null = null;
+    let highestSimilarity = -Infinity;
+    
     for (const trainingPattern of this.trainingData) {
-      const trainingMean = trainingPattern.pattern.flat().reduce((sum, val) => sum + val, 0) / trainingPattern.pattern.flat().length;
-      const similarity = 1 / (1 + Math.abs(patternMean - trainingMean));
+      const trainingAvg = trainingPattern.pattern.flat().reduce((sum, val) => sum + val, 0) / trainingPattern.pattern.flat().length;
+      const similarity = 1 - Math.abs(patternAvg - trainingAvg);
       
-      if (similarity > maxSimilarity) {
-        maxSimilarity = similarity;
-        bestMatch = {
-          label: trainingPattern.label,
-          confidence: similarity
-        };
+      if (similarity > highestSimilarity) {
+        highestSimilarity = similarity;
+        bestMatch = trainingPattern;
       }
     }
-
-    return bestMatch;
+    
+    return {
+      label: bestMatch ? bestMatch.label : 'unknown',
+      confidence: highestSimilarity
+    };
   }
 }
