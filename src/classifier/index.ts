@@ -1,10 +1,10 @@
 typescript
 export class NeuralSignalClassifier {
-  private trainedPatterns: Array<{ pattern: number[][]; label: string }> = [];
+  private patterns: Array<{ pattern: number[][]; label: string }> = [];
 
   analyzePattern(data: number[][]): { mean: number; stdDev: number; max: number; min: number } {
     if (data.length === 0) {
-      throw new Error('Neural data cannot be empty');
+      throw new Error("Data cannot be empty");
     }
 
     const flattened = data.flat();
@@ -20,27 +20,27 @@ export class NeuralSignalClassifier {
   }
 
   train(patterns: Array<{ pattern: number[][]; label: string }>): void {
-    this.trainedPatterns = [...patterns];
+    this.patterns = [...patterns];
   }
 
-  classify(pattern: number[][]): string | null {
-    if (this.trainedPatterns.length === 0) {
-      throw new Error('Classifier must be trained before making classifications');
+  classify(input: number[][]): string | null {
+    if (this.patterns.length === 0) {
+      throw new Error("Classifier must be trained before making classifications");
     }
 
-    const analyzedPattern = this.analyzePattern(pattern);
+    const inputStats = this.analyzePattern(input);
     let bestMatch: string | null = null;
     let minDistance = Infinity;
 
-    for (const { pattern: trainedPattern, label } of this.trainedPatterns) {
-      const analyzedTrained = this.analyzePattern(trainedPattern);
+    for (const { pattern, label } of this.patterns) {
+      const patternStats = this.analyzePattern(pattern);
       
       // Calculate Euclidean distance between statistical features
       const distance = Math.sqrt(
-        Math.pow(analyzedPattern.mean - analyzedTrained.mean, 2) +
-        Math.pow(analyzedPattern.stdDev - analyzedTrained.stdDev, 2) +
-        Math.pow(analyzedPattern.max - analyzedTrained.max, 2) +
-        Math.pow(analyzedPattern.min - analyzedTrained.min, 2)
+        Math.pow(inputStats.mean - patternStats.mean, 2) +
+        Math.pow(inputStats.stdDev - patternStats.stdDev, 2) +
+        Math.pow(inputStats.max - patternStats.max, 2) +
+        Math.pow(inputStats.min - patternStats.min, 2)
       );
 
       if (distance < minDistance) {
