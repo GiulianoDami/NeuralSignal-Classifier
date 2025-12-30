@@ -10,9 +10,9 @@
   },
   "keywords": [
     "neural-networks",
-    "brain-signals",
-    "psychiatric-disorders",
+    "psychiatry",
     "machine-learning",
+    "brain-signals",
     "typescript"
   ],
   "author": "NeuralSignal Team",
@@ -22,7 +22,5 @@
     "ts-node": "^10.9.1",
     "typescript": "^4.9.5"
   },
-  "dependencies": {
-    "ml-kmeans": "^2.0.0"
-  }
+  "dependencies": {}
 }
