@@ -14,94 +14,90 @@ export class NeuralSimulator {
    * @param samplingRate Samples per second
    * @returns Array of neural activity readings
    */
-  generateNeuralActivity(duration: number, samplingRate: number): number[][] {
-    const totalSamples = Math.floor(duration * samplingRate);
-    const activityData: number[][] = [];
+  public generateNeuralActivity(duration: number, samplingRate: number): number[][] {
+    const totalSamples = duration * samplingRate;
+    const data: number[][] = [];
     
     for (let i = 0; i < totalSamples; i++) {
-      // Generate base neural firing pattern with some randomness
-      const neuron1 = this.generateNeuronActivity(i, 0.1, 0.3);
-      const neuron2 = this.generateNeuronActivity(i, 0.2, 0.7);
-      const neuron3 = this.generateNeuronActivity(i, 0.4, 0.5);
+      // Generate base neural activity with some randomness
+      const baseActivity = Math.sin(2 * Math.PI * this.baseFrequency * (i / samplingRate));
       
-      activityData.push([neuron1, neuron2, neuron3]);
+      // Add noise to simulate real neural signals
+      const noise = (Math.random() - 0.5) * this.noiseLevel;
+      
+      // Simulate different neural patterns based on time
+      let patternFactor = 1;
+      if (i > totalSamples * 0.3 && i < totalSamples * 0.7) {
+        patternFactor = 1.5; // Increased activity
+      } else if (i > totalSamples * 0.8) {
+        patternFactor = 0.5; // Decreased activity
+      }
+      
+      const activity = (baseActivity + noise) * patternFactor;
+      
+      // Create multi-channel data (4 channels typical for neural recordings)
+      data.push([
+        activity,
+        activity * 0.8 + (Math.random() - 0.5) * 0.1,
+        activity * 0.6 + (Math.random() - 0.5) * 0.15,
+        activity * 0.9 + (Math.random() - 0.5) * 0.05
+      ]);
     }
     
-    return activityData;
+    return data;
   }
 
   /**
-   * Generates activity for a single neuron
-   * @param time Time step
-   * @param amplitude Amplitude factor
-   * @param frequency Frequency factor
-   * @returns Neuron activity value
+   * Generates simulated neural activity for a specific psychiatric condition
+   * @param condition The condition to simulate ('schizophrenia', 'bipolar', or 'healthy')
+   * @param duration Duration of simulation in seconds
+   * @param samplingRate Samples per second
+   * @returns Array of neural activity readings
    */
-  private generateNeuronActivity(time: number, amplitude: number, frequency: number): number {
-    // Base sine wave with added noise
-    const baseValue = Math.sin(2 * Math.PI * frequency * time / 100) * amplitude;
-    const noise = (Math.random() - 0.5) * this.noiseLevel;
-    return Math.max(0, Math.min(1, baseValue + noise));
-  }
-
-  /**
-   * Simulates abnormal neural patterns for psychiatric conditions
-   * @param condition Condition type ('schizophrenia', 'bipolar', or 'healthy')
-   * @param duration Duration of simulation
-   * @param samplingRate Sampling rate
-   * @returns Simulated neural data with condition-specific patterns
-   */
-  simulateCondition(condition: string, duration: number, samplingRate: number): number[][] {
-    const totalSamples = Math.floor(duration * samplingRate);
-    const activityData: number[][] = [];
+  public generateConditionData(condition: string, duration: number, samplingRate: number): number[][] {
+    const totalSamples = duration * samplingRate;
+    const data: number[][] = [];
     
     for (let i = 0; i < totalSamples; i++) {
-      let neuron1, neuron2, neuron3;
+      let activity: number[];
       
-      switch(condition) {
+      switch (condition) {
         case 'schizophrenia':
-          // Irregular firing patterns
-          neuron1 = this.generateIrregularActivity(i, 0.1, 0.3);
-          neuron2 = this.generateIrregularActivity(i, 0.2, 0.7);
-          neuron3 = this.generateIrregularActivity(i, 0.4, 0.5);
+          // Simulate irregular firing patterns
+          const irregularity = Math.sin(2 * Math.PI * 2 * (i / samplingRate)) * 0.3;
+          activity = [
+            0.5 + irregularity + (Math.random() - 0.5) * 0.2,
+            0.3 + irregularity * 0.5 + (Math.random() - 0.5) * 0.15,
+            0.7 + irregularity * 0.8 + (Math.random() - 0.5) * 0.25,
+            0.4 + irregularity * 0.3 + (Math.random() - 0.5) * 0.1
+          ];
           break;
           
         case 'bipolar':
-          // High amplitude fluctuations
-          neuron1 = this.generateFluctuatingActivity(i, 0.1, 0.8);
-          neuron2 = this.generateFluctuatingActivity(i, 0.2, 0.6);
-          neuron3 = this.generateFluctuatingActivity(i, 0.4, 0.7);
+          // Simulate oscillating patterns
+          const oscillation = Math.sin(2 * Math.PI * 0.5 * (i / samplingRate)) * 0.4;
+          activity = [
+            0.3 + oscillation + (Math.random() - 0.5) * 0.1,
+            0.8 - oscillation + (Math.random() - 0.5) * 0.15,
+            0.6 + oscillation * 0.5 + (Math.random() - 0.5) * 0.2,
+            0.2 - oscillation * 0.3 + (Math.random() - 0.5) * 0.1
+          ];
           break;
           
         default: // healthy
-          neuron1 = this.generateNeuronActivity(i, 0.1, 0.3);
-          neuron2 = this.generateNeuronActivity(i, 0.2, 0.7);
-          neuron3 = this.generateNeuronActivity(i, 0.4, 0.5);
+          // Simulate regular, stable patterns
+          const stable = Math.sin(2 * Math.PI * 0.2 * (i / samplingRate)) * 0.2;
+          activity = [
+            0.5 + stable + (Math.random() - 0.5) * 0.1,
+            0.5 - stable + (Math.random() - 0.5) * 0.1,
+            0.5 + stable * 0.8 + (Math.random() - 0.5) * 0.15,
+            0.5 - stable * 0.6 + (Math.random() - 0.5) * 0.12
+          ];
       }
       
-      activityData.push([neuron1, neuron2, neuron3]);
+      data.push(activity);
     }
     
-    return activityData;
-  }
-
-  /**
-   * Generates irregular neural activity
-   */
-  private generateIrregularActivity(time: number, amplitude: number, frequency: number): number {
-    const irregularity = Math.sin(time * 0.1) * 0.1;
-    const baseValue = Math.sin(2 * Math.PI * frequency * time / 100) * amplitude + irregularity;
-    const noise = (Math.random() - 0.5) * this.noiseLevel;
-    return Math.max(0, Math.min(1, baseValue + noise));
-  }
-
-  /**
-   * Generates fluctuating neural activity
-   */
-  private generateFluctuatingActivity(time: number, amplitude: number, maxAmplitude: number): number {
-    const fluctuation = Math.sin(time * 0.05) * 0.3;
-    const baseValue = Math.sin(2 * Math.PI * this.baseFrequency * time / 100) * maxAmplitude + fluctuation;
-    const noise = (Math.random() - 0.5) * this.noiseLevel;
-    return Math.max(0, Math.min(1, baseValue + noise));
+    return data;
   }
 }
